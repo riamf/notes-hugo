@@ -1,0 +1,6 @@
+[submodule "riamf.github.io"]
+	path = riamf.github.io
+	url = git@github.com:riamf/riamf.github.io.git
+[submodule "notes/themes/black-and-light"]
+	path = notes/themes/black-and-light
+	url = https://github.com/davidhampgonsalves/hugo-black-and-light-theme.git

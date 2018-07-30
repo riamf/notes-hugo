@@ -1,0 +1,38 @@
+baseurl = "http://riamf.github.io"
+languageCode = "en-us"
+title = "RH.io"
+theme = "black-and-light"
+copyright = ""
+publishdir = "riamf.github.io"
+
+
+pygmentsstyle       = "bw"
+pygmentscodefences  = true
+
+
+[params]
+  sitename = "Black & Light"
+  description = "Notes"
+  twitter = "https://twitter.com/riamf"
+  github = "https://github.com/riamf"
+  disqus = ""
+
+[[menu.main]]
+    name = "About"
+    url  = "/about"
+[[menu.main]]
+    name = "Projects"
+    url  = "/projects"
+[[menu.main]]
+    name = "Notes"
+    url  = "/notes"
+[[menu.main]]
+    name = "Resume"
+    url  = "/resume"
+
+[Author]
+	name = "Pawel Kowalczuk"
+[Taxonomies]
+	tag = "tags"
+	series = "series"
+	series-desc = "series-desc"
