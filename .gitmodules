@@ -1,0 +1,3 @@
+[submodule "notes/public"]
+	path = notes/public
+	url = git@github.com:riamf/riamf.github.io.git
