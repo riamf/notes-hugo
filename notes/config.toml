@@ -1,5 +1,5 @@
 # Site settings
-baseurl = "https://riamf.github.io"
+baseurl = "https://riamf.github.io/"
 languageCode = "en"
 title = "Learning Notes"
 theme = "hugo-theme-cactus-plus"

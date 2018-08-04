@@ -14,7 +14,6 @@ draft = false
     Most basic estimate for location.
     As simple as possible it is just and average value from a list of values described with equation:
 
-    ![Example image](/images/mean.png)
 
 #### Trimmed Mean
 
@@ -24,7 +23,6 @@ draft = false
 
     It is calculated by multiplying every value by its weight and deviding their sum by the sum of weights. See the formula:
 
-    ![Example image](/images/w_mean.png)
 
     It is very usefull when you want to distinct  that some values are more important than others.
 
