@@ -1,7 +1,7 @@
 +++
 title = "Grafana in docker setup"
 date = 2018-09-06T11:54:05+02:00
-tags = ["docker", "grafana", "data analysis"]
+tags = ["docker", "data analysis", "grafana"]
 categories = [""]
 draft = false
 +++
