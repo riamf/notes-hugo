@@ -15,7 +15,7 @@ And it is all free and open sourced so 😍.
 
 # What for
 
-Today most multi-services platforms are build using docker containers. It provides you with great flexibility and this is what I wanted to have with grafana just a standalone docker image that I can have preconfigured and ready to deploy in dc/os for example.
+Today most multi-services platforms are build using docker containers. It provides you with great flexibility and this is what I wanted to have with grafana just a standalone docker image that I can have pre-configured and ready to deploy in dcos for example.
 
 What I wanted to achieve with grafana is to have a nice display of what is happening in production database of one of the companies I work for. I wanted to create dashboard that will query some data and will present valuable information that we can easily interpret. 
 
