@@ -1,7 +1,7 @@
 +++
 title = "Grafana in docker setup"
 date = 2018-09-06T11:54:05+02:00
-tags = [""]
+tags = ["docker", "grafana", "data analysis"]
 categories = [""]
 draft = false
 +++
@@ -43,7 +43,7 @@ it will start on `3001` port, you get the idea how it works, `3001` is a externa
 
 It should display something like this:
 
-![grafana config](/static/gf_config.png)
+![grafana login](/images/gf_login.png)
 
 # Configuring docker image
 
@@ -157,15 +157,18 @@ So first configuration should look something like this:
 
 {{< highlight yaml "linenos=inline,hl_lines=8 15-17,linenostart=0" >}}
 datasources:
-    - name: default
+    - name: test
       type: mysql
       orgId: 1
-      url: http://localhost:3306
-      password: ""
-      user: root
+      url: mysql.host.address.com
+      password: grafana
+      user: grafana
       database: test
       editable: true
+      isDefault: true
 {{< / highlight >}}
+
+This is all you need to tell grafana about your mysql connection, here I am setting it as a editable, but I am not sure if it is actually already implemented feature. Remember to change these setting to once that you have in your configuration, I just typed here some dummy stuff. Also covering password would be nice.
 
 Save this file inside created directory structure.
 Now to mount this as a volume we need to execute `docker run` with additional `-v` parameter. Cd to root path where `provisiong` dir is. 
@@ -175,13 +178,40 @@ Remember that we want to replace path inside container `/etc/grafana/provisionin
 
 Now if you go to `localhost:3000` under Configuration -> Data Source you can see that our test configuration is added.
 
-[img src here]
+![grafana config](/images/gf_config.png)
 
 
 ### Adding dashboard
 
+So this is going to be really simple. To create first datasource, just go to grafana and create one. You already have grafana connected to your datasoure and all should already work just fine. After creating datasource you nee to export it as a json file like here:
 
+![grafana export](/images/gf_export.png)
 
+Now remember the folder structure we created? The part with `/provisioning/datasources` ? To add ready dashboard you just need to create new directory on the same level `datasources` is, called `dashboards`. There you just need to add exported json in file with `*.json` extension. Name does not matter, grafana will load all dashboards.
 
+### Scripting
 
+That was all the needed configuration. What is left is making things...more swifty and to do that let us put all that stuff into scripts to be able to use it easily.
 
+Create `build.sh` script that will look like that:
+
+{{< highlight bash "linenos=inline,hl_lines=8 15-17,linenostart=0" >}}
+#!/bin/bash
+docker build -t my-grafana .
+{{< / highlight >}}
+
+And `run.sh` script for running our image:
+
+{{< highlight bash "linenos=inline,hl_lines=8 15-17,linenostart=0" >}}
+#!/bin/bash
+docker run -p 3000:3000 -d -v $(pwd)/provisioning:/etc/grafana/provisioning my-grafana
+{{< / highlight >}}
+
+That is it, you now have working grafana container with pre-configured dashboard and datasource that is ready to deploy wherever you want to have it.
+
+# Summary
+
+Grafana is a powerful analytical tool that can help you draw some conclusions about how your system works or just to monitor behavior of components that you have.
+Here We prepared a full configuration that can be kept in repository and easily deployed in dcos cluster for example.
+I had a lot of fun setting it up and analyzing data from services and databases, it is amazing tool that you should consider using.
+Have fun 😄 and if you want, you can checkout [here](https://github.com/riamf/grafana-docker-image) is all we did in this note.
