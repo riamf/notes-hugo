@@ -9,23 +9,24 @@ draft = false
 
 # Grafana
 
-Grafana is a tool that lets you visualize metrics. It handles a lot of different data sources and is very flexible. It does not require you to be an it expert to setup and with just few easy steps you can connect to your database or srvice and present live metric that can help you more deeply understand how you system is used. With a system of alerts it tell you about bottlenecks that you might not know of, like moments in time when your system is overloaded and you database is dying.
+Grafana is a tool that lets you visualize metrics. It handles a lot of different data sources and is very flexible. It does not require you to be an it expert to setup and with just few easy steps you can connect to your database or service and present live metric that can help you more deeply understand how your system is used. With a system of alerts it tell you about bottlenecks that you might not know of, like moments in time when your system is overloaded and you database is dying.
 
-And it is all free and open sourced so 😍. 
+And it is all free and open sourced 😍. 
 
 # What for
 
 Today most multi-services platforms are build using docker containers. It provides you with great flexibility and this is what I wanted to have with grafana just a standalone docker image that I can have pre-configured and ready to deploy in dcos for example.
 
-What I wanted to achieve with grafana is to have a nice display of what is happening in production database of one of the companies I work for. I wanted to create dashboard that will query some data and will present valuable information that we can easily interpret. 
+What I wanted to achieve with grafana is to have a nice display of what is happening in production database. I wanted to create dashboard that will query some data and will present valuable information that I can easily interpret. 
 
-So What I am going to explain here is a grafana connection to mysql database. But as I an imagine other data sources might by as "simple" as this one. After fighting all issues that I encountered everything else should be easy.
+So what I am going to explain here is a grafana connection to mysql database. But as I can imagine other data sources might by as "simple" as this one. After fighting all issues that I encountered, everything else should be easy.
 
 # Initial setup
 
 So lets begin by making sure that you have docker installed. I used the latest version that is available [here](https://docker.com). I will be using terminal commands a lot so just be sure to keep terminal window opened.
 
-After that we need to have grafana docker image installed. It is easily available from docker hub (it is where all official docker images are available). So to download grafana image just type in:
+After that we need to have grafana docker image installed. It is easily available from docker hub (it is where all official docker images are available). 
+To download grafana image just type in:
 
 `docker pull grafana/grafana`
 
@@ -33,11 +34,17 @@ This will download grafana image, to run it and make sure that everything is wor
 
 `docker run -d grafana/grafana`
 
-The `-d` option here is to run image as a demon. Grafna is configured to run on port `3000`, it is a popular port so before running make sure it is not taken already on your machine. If you already have something runing there then it is easy to change port for docker container, just change above command like this:
+The `-d` option here is to run image as a demon. Grafna is configured to run on port `3000`, it is a popular port so before running make sure it is not taken already on your machine. 
+Docker will tell you that port is taken by displaying error message with something like:
+
+`failed: port is already allocated`
+
+ If you already have something running there then it is easy to change port for docker container, just change above command like this:
 
 `docker run -d -p 3001:3000 grafana/grafana`
 
-it will start on `3001` port, you get the idea how it works, `3001` is a external port and `3000` is a docker inside port that will be mapped to external. Now that everything is running you just need to check if it is working just by going to:
+it will start on `3001` port, I think you get the idea how it works, `3001` is a external port and `3000` is a docker inside port that will be mapped to external.
+Now that everything is running you just need to check if it is working just by going to:
 
 `localhost:3000` 
 
@@ -54,8 +61,7 @@ Well as you probably already know, there are multiple options to change containe
 First we need to create `Dockerfile` yes, there is no extension there. 
 I will not describe what parameters you can add into dockerfile cause there are so many, I will just describe the one I used.
 
-So here is all that you need to have in your dockerfile to be able to build accessible grafana image:
-
+So here is all that you need to have in your configuration to be able to build accessible grafana image:
 
 ```
 FROM grafana/grafana
@@ -78,17 +84,19 @@ Next is `ENV` keyword that is responsible for adding new env variables to the co
 
 ### Grafana configuration
 
-So Why I am using exactly these variables. Grafana by default is configured with `grafana.ini` file that is located in `/etc/grafana/grafana.ini` or `/usr/local/etc/grafana/grafana.ini`. This file contains a lot of configuration possibilities but there is no way to modify them inside container because when we run container is is to late to go and modify the file, server is already up and ini file is already loaded.
+So why I am using exactly these variables. Grafana by default is configured with `grafana.ini` file that is located in `/etc/grafana/grafana.ini` or `/usr/local/etc/grafana/grafana.ini`. This file contains a lot of configuration possibilities but there is no way to modify them inside container because when we run container it is to late to go and modify the file, server is already up and ini file is already loaded.
 But to overcome this limitation, grafana introduced env variables convention. It basically matches initial configurations with corresponding environment variable.
 To create correct variable we need to know what name it has in `grafana.ini` file.
 So here are some examples of variable names and their matches from file:
 
 ```
-    GF_AUTH_DISABLE_LOGIN_FORM "true" = 
+    GF_AUTH_DISABLE_LOGIN_FORM "true" 
+    /* is equivalent to */
     [auth]
     disable_login_form = true
     ...
-    GF_AUTH_ANONYMOUS_ENABLED "true" = 
+    GF_AUTH_ANONYMOUS_ENABLED "true"
+    /* is equivalent to */
     [auth.anonymous]
     enabled = true
 ```
@@ -99,15 +107,15 @@ I think you can get the idea. Every variable must start with `GF_` and then goes
 
 So for my case I wanted to already have some content inside my server, like default data source or some initial dashboard. This way I can always put these files in repository and track changes.
 
-So how can we do than. Well fortunately grafana supports that kind of stuff as well our of the box, amazing 💯.
+So how can we do than. Well fortunately grafana supports that kind of stuff as well out of the box, amazing 💯.
 
 ### Adding data source
 
-So to add new data source we need to create configuration file called `datasources.yaml` inside container under `/etc/grafana/provisioning/datasources`.
-Again the problem is that it is in container and after container is running it is to late. So what we can to is mount a volume under that path.
+To add new data source we need to create configuration file called `datasources.yaml` inside container under `/etc/grafana/provisioning/datasources`.
+Again the problem is that it is inside container and after container is running it is to late. So what we can do is mount a volume under that path.
 
-So first we need to create folder `provisioning` and inside folder named `datasources` and then inside this folder create file datasources.yaml that will contain our default datasource configuration.
-But what kind of configuration we can put there, where besides looking into grafana documentation you can go into container and look into sample configuration file. First display all running containers with command
+So first we need to create folder `provisioning` and inside folder named `datasources` and then inside this folder create file `datasources.yaml` that will contain our default data source configuration.
+But what kind of configuration we can put there. Well besides looking into grafana documentation you can go into container and look into sample configuration file. First display all running containers with command
 
 `docker ps`
 
@@ -118,11 +126,11 @@ CONTAINER ID        IMAGE               COMMAND             CREATED             
 8ecddfc1ade3        my-grafana          "/run.sh"           About an hour ago   Up About an hour    0.0.0.0:3000->3000/tcp   elastic_brown
 ```
 
-What's important is container id so copy that and execut next command
+What's important is container id so copy that and execute next command
 
-`docker exec -it container_id bash`
+`docker exec -it CONTAINER ID bash`
 
-This command will take you inside the *running* container. Here you have a bare linux image. So to display sample datasource file configuration just run
+This command will take you inside the *running* container. Here you have a bare linux image. So to display sample data source file configuration just run
 
 `cat ./usr/share/grafana/conf/provisioning/datasources/sample.yaml`
 
@@ -138,7 +146,7 @@ apiVersion: 1
 #     orgId: 1
 
 # # list of datasources to insert/update depending
-# # on what's available in the datbase
+# # on what's available in the database
 #datasources:
 #   # <string, required> name of the datasource. Required
 # - name: Graphite
@@ -149,11 +157,11 @@ apiVersion: 1
 ...
 ```
 
-As you can se there are a lot options to play with, bot for now what is important for us is section where datasources are described.
+As you can see, there are a lot options to play with, but for now what is important for us is section where datasources are described.
 
-**Remember that yaml format is very sensitive to any kind of empty signs, additional signs**
+**Remember that yaml format is very sensitive to any kind of whitespace signs, tabulators**
 
-So first configuration should look something like this:
+First configuration should look something like this:
 
 {{< highlight yaml "linenos=inline,hl_lines=8 15-17,linenostart=0" >}}
 datasources:
@@ -168,11 +176,11 @@ datasources:
       isDefault: true
 {{< / highlight >}}
 
-This is all you need to tell grafana about your mysql connection, here I am setting it as a editable, but I am not sure if it is actually already implemented feature. Remember to change these setting to once that you have in your configuration, I just typed here some dummy stuff. Also covering password would be nice.
+That is all you need to tell grafana about your mysql connection, here I am setting it as a editable, but I am not sure if it is actually already implemented feature. Remember to change these settings to the once that match your configuration, I just typed here some dummy stuff. Also covering password would be nice.
 
 Save this file inside created directory structure.
-Now to mount this as a volume we need to execute `docker run` with additional `-v` parameter. Cd to root path where `provisiong` dir is. 
-Remember that we want to replace path inside container `/etc/grafana/provisioning/datasources` with `./provisioning` to so to mount that dir just call
+Now to mount this as a volume we need to execute `docker run` with additional `-v` parameter. Cd to root path where `provisioning` dir is. 
+Remember that we want to replace path inside container `/etc/grafana/provisioning/datasources` with `./provisioning` to do so, mount that dir just by calling:
 
 `docker run -p 3000:3000 -d -v $(pwd)/provisioning:/etc/grafana/provisioning my-grafana`
 
@@ -183,11 +191,11 @@ Now if you go to `localhost:3000` under Configuration -> Data Source you can see
 
 ### Adding dashboard
 
-So this is going to be really simple. To create first datasource, just go to grafana and create one. You already have grafana connected to your datasoure and all should already work just fine. After creating datasource you nee to export it as a json file like here:
+So this is going to be really simple. To create first dashboard, just go to grafana and create one. You already have grafana connected to your datasoure and all should already work just fine. After creating dashboard you need to export it as a json file like here:
 
 ![grafana export](/images/gf_export.png)
 
-Now remember the folder structure we created? The part with `/provisioning/datasources` ? To add ready dashboard you just need to create new directory on the same level `datasources` is, called `dashboards`. There you just need to add exported json in file with `*.json` extension. Name does not matter, grafana will load all dashboards.
+Now remember the folder structure we created? The part with `/provisioning/datasources` ? To add ready dashboard you just need to create new directory on the same level that `datasources` is, called `dashboards`. There you just need to add exported json in file with `*.json` extension. Name does not matter, grafana will load all json dashboards form that file path.
 
 ### Scripting
 
@@ -200,7 +208,7 @@ Create `build.sh` script that will look like that:
 docker build -t my-grafana .
 {{< / highlight >}}
 
-And `run.sh` script for running our image:
+And `run.sh` script for running your image:
 
 {{< highlight bash "linenos=inline,hl_lines=8 15-17,linenostart=0" >}}
 #!/bin/bash
