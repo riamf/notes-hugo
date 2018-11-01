@@ -31,7 +31,7 @@ It was created at Apple by people from iCloud team. You can check this [talk](ht
 # Template App
 ## Creating App
 ## Adding dependencies
-## `Vapor update`
+## Vapor update
 ## Example route
 ## User model
 ## Basic Auth
@@ -40,4 +40,4 @@ It was created at Apple by people from iCloud team. You can check this [talk](ht
 ## Seeding database
 ## Deployment
 ## Summary
-
+## External sources
