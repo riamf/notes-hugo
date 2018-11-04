@@ -93,7 +93,92 @@ By performing above  whether in Xcode or in Terminal you will start server and t
 
 Yeah, it works! Now you know how to start and run your project.
 
-# Route
+# Routes
+
+Let us now talk a bit about routing. How is it happen that when I type into my web browser: `http://localhost:8080/index` vapor server knows where to go, and knows what code to execute? It is quite simple. Our default project came with a file `routes.swift`, it already contains few pre-defined routes.
+As you can see everything happens in this routes function:
+```
+public func routes(_ router: Router) throws
+```
+It provides a `router` object that has ability to extend available routes handled by this sample app. 
+## Config
+
+If you would like to change Vapor configuration, port number or add separation between environments, change cipher configuration and more, it is possible by creating directory called `Config` in root project folder. There you can put for example server.json file with some new configuration like this:
+{{< highlight json "linenos=inline,linenostart=0" >}}
+{
+    "port": "$PORT:8080",
+    "host": "0.0.0.0",
+    "securityLayer": "none"
+}
+{{< / highlight >}}
+
+To read more about what you can do go to [vapor documentation](https://docs.vapor.codes/2.0/configs/config/).
+Additionally port and hostname can be passed as `vapor run` parameters like this:
+```
+vapor run --hostname 192.168.31.215 --port 6969
+```
+
+## Adding new route
+So if I would like to create a new route like this: `http://localhost:8080/welcome`, that will return welcome message, what I need to do is add it to the router like this inside this `routes` function:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+router.get("welcome") { _ -> String in
+    return "Welcome"
+}
+{{< / highlight >}}
+
+Now going [here](http://localhost:8080/welcome) I can see expected welcome message:
+![vapor welcome](/images/vapor_welcome.png)
+
+But what happened here? By sending request to the server for `welcome` route our sample app goes to the implementation in a closure that was registered under `welcome`. In this example it simply returns a String message that is then returned to the browser where it is displayed.
+
+## Keeping it clean
+
+As you can probably imagine, one function to handle all routes and their logic that I have planned to my web application is not enough, it will be a mess 😱. There are ways to avoid this situation. Even in sample project there is example `TodoController` at the bottom of the `routes.swift` it hides the implementation for all (get|post|delete) operations that goes under `todos` route.
+
+I still think we could do better...and we can. There is a protocol called `RouteCollection`. By conforming to it you can internally provide routes that you desire and also hold the implementation for controller separated from other routes in there. Let's move our `welcome` route to new object called `WelcomeRoutes`:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+class WelcomeRoutes: RouteCollection {
+    func boot(router: Router) throws {
+        router.get("welcome") { _ -> String in
+            return "Welcome"
+        }
+    }
+}
+{{< / highlight >}}
+
+Now we can move the logic implementation from our router to new controller class called `WelcomeController`:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+class WelcomeController {
+    func welcome(_ request: Request) -> String {
+        return "Welcome"
+    }
+}
+{{< / highlight >}}
+
+I know there is not much logic there, we are just returning some dummy String value but still it is good to keep good practices from the beginning. To use this object in `WelcomeRoutes` collection just do:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+class WelcomeRoutes: RouteCollection {
+    func boot(router: Router) throws {
+        let controller = WelcomeController()
+        router.get("welcome", use: controller.welcome)
+    }
+}
+{{< / highlight >}}
+
+In function `boot` we have our `router` so the content of `welcome` could be just copied from `routes.swift`, but we wanted to move logic to a controller so closure content was copied to `WelcomeController`, but that is not all. We still need to somehow tell in the main `routes.swift` file that we have this new `WelcomeRoutes` object. To do this `routes` object has a functionality to register whole collections of routes and registering our new collection will look something like:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+// routes.swift
+try router.register(collection: WelcomeRoutes())
+{{< / highlight >}}
+
+Now you can check that going under [http://localhost:8080/welcome](http://localhost:8080/welcome) still works but we now have a much more separated implementation for all of it.
+
+## Route Parameters
 
 # Leaf
 
