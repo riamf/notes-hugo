@@ -26,6 +26,73 @@ It was created at Apple by people from iCloud team. You can check this [talk](ht
 
 # Swift Package Manager
 
+SPM was released with Swift 3.0 and is supported with this and all above Swift versions. If you come from iOS world then you will recognize it as similar to [Cocoapods](https://cocoapods.org/) or [Carthage](https://github.com/Carthage/Carthage), because is actually is doing exactly the same stuff. It is a simple dependency management tool that helps you keep track of, compile and link all external libraries that you use. What is really nice about SPM is that it works on Linux 💯. It is vastly used among desktop macOS apps or Linux apps written in Swift. But beside helping you to manage dependencies you can actually use it to create one, like a library you would like to publish for open source community or one that you are using internally in your company and would like to keep it maintained. If you want to know more about it I recommend checking one of the great tutorials from Ray Wenderlich sites written by Mikael Konutgan [An Introduction to the Swift Package Manager](https://www.raywenderlich.com/750-an-introduction-to-the-swift-package-manager) or going directly to SPM [documentation](https://swift.org/package-manager/). Here the only thing you have to know is that if you would like to use some external library in vapor app, you can use SPM for to do it and I will present it many times in next chapters.
+
+# Vapor CLI
+
+So to use Vapor you need to install it. On macOS I am using brew to manage most stuff that I am using so I recommend to just open Terminal and type in:
+```
+brew install vapor/tap/vapor
+```
+This will download and install Vapor Command Line Interface.
+On Linux you just have to type this in console:
+```
+eval "$(curl -sL https://apt.vapor.sh)"
+```
+It will also tell you if your Linux version is supported if any issues appear.
+
+Now that you have this CLI tool installed you can check Swift and Xcode compatibility by running in Terminal:
+```
+eval "$(curl -sL check.vapor.sh)"
+```
+it should tell you something like this:
+
+![vapor check](/images/vapor_check.png)
+
+As you can see I have a warning, this is because I recently updated macOS to Mojave and Xcode to version 10 that also updated my CLI tools and Swift to 4.2. These versions are not yet fully supported by Vapor team but I did not noticed any issues while playing around with Vapor and hopefully you won't see any.
+
+Ok, now that we have all things ready, go into your working directory and create sample app by typing in Terminal:
+```
+vapor new sampleApp
+```
+This will make  new folder called `sampleApp`, if you `cd` inside you will see something like:
+
+![vapor sample dir](/images/vapor_sample_dir.png)
+
+This is a structure of a base Vapor template. It event contains some sample model and SQLite database configuration with implementation of base CRUD operations.
+
+Now, lets Build and run this project.
+
+If you are using macOS and want to use Xcode, please jump here [Using Xcode](#using-xcode)
+
+For rest of us using command line, to build project type:
+```
+vapor build
+```
+
+This might take a while cause vapor will fetch all dependencies and then will build everything. After that just use `run` command:
+```
+vapor run
+```
+
+## Using Xcode
+
+Vapor has a full support for running in Xcode, to make it happen though you need to generate Xcode project, but don't worry Vapor CLI will help you with that. Just `cd` into `sampleApp` directory and type:
+```
+vapor xcode -y
+```
+This command will generate and open Xcode project for you. Having Xcode support is great cause it gives you breakpoints and all LLDB commands just like in iOS/macOS apps 😍. From Xcode you can build and run Vapor app same as you would do with iOS or macOS app by using ⌘+r to build&run or ⌘+b to build ⌘+c to clean etc it all works the same. Sample vapor app comes with Two default schemas, one is for tests and one for building and running the app, be sure you have selected correct `Run` scheme:
+
+![vapor scheme](/images/vapor_scheme.png)
+
+# Where is my server?
+
+By performing above  whether in Xcode or in Terminal you will start server and that will make your app accessible locally under port `8080` so if you go [here](http://localhost:8080/) you should see something like this:
+
+![sample localhost](/images/vapor_sample_localhost.png)
+
+Yeah, it works! Now you know how to start and run your project.
+
 # Route
 
 # Leaf
