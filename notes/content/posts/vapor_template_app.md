@@ -180,6 +180,86 @@ Now you can check that going under [http://localhost:8080/welcome](http://localh
 
 ## Route Parameters
 
+As you have already noticed probably we declared routes that are using [HTTP Get](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods) method most of the time. Se let us personalize our welcome message by reading query parameters. It is pretty simple task as every `Request` object has `QueryContainer` structure that represents query, it also implements multiple variations of subscripts so to read for example query value with key `name` wee need to implement something like this:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+func welcome(_ request: Request) -> String {
+    let name: String = request.query["name"] ?? ""
+    return "Welcome \(name)"
+}
+{{< / highlight >}}
+
+And that is it, now calling [http://localhost:8080/welcome?name=riamf](http://localhost:8080/welcome?name=riamf) will add personalized welcome message.
+
+Since most stuff in Vapor works with Codable we can also do magic like this:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+struct Person: Codable {
+    let name: String
+}
+/* ... */
+func welcome(_ request: Request) -> String {
+    let person = try! request.query.decode(Person.self)
+    let name: String = person.name
+    return "Welcome \(name)"
+}
+{{< / highlight >}}
+
+Here Vapor will decode query into our structure model called `Person`, nice 😍
+
+Ok, but what if I would like to make an unknown route where I know only that one part of it will contain String value. This is also very easy in Vapor. First lets read parameter from request, we will do this in our welcome route like this:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+func welcome(_ request: Request) throws -> String {
+    let name: String = try request.parameters.next(String.self)
+    return "Welcome \(name)"
+}
+{{< / highlight >}}
+
+Next we need to tell our router that we want to handle route `localhost:8080/welcome/(some String value)`, to do this we can add new route to our collection but and our already modified handler will do the trick of extracting route parameter:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+router.get("welcome", String.parameter, use: controller.welcome)
+{{< / highlight >}}
+
+Here we are saying that if something that goes after `welcome` and is a String value we want it to be handled by our welcome implementation where this String value is extracted and passed down to response nice and clear solution.
+
+## Other HTTP methods
+
+Ah yes, not everything can be done with query parameters and HTTP GET method, there are others like POST for example, very broadly used. Vapor also makes this very easy. With support for `Codable` it could not be easier, remember our `Person` structure, we need to do one thing to make it availabe to use with POST content:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+struct Person: Codable, Content {
+    let name: String
+}
+{{< / highlight >}}
+
+Adding conformance to `Content` type does everything we need. Now lets write new POST route in our collection:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+router.post(Person.self, at: "welcome", use: controller.postWelcome)
+{{< / highlight >}}
+
+AS you can see here we are telling our router to look for Content of type `Person.self` in body of POST request to `welcome` endpoint and use `postWelcome` function as a handler
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+func postWelcome(_ request: Request, _ person: Person) -> String {
+    return "Welcome \(person.name)\n"
+}
+{{< / highlight >}}
+
+This is really nice, cause we see here that we already have unwrapped value of our parameter in handler function, ready to be used 👌. Now to check if this actually works we need to make a POST call to our server like this:
+```
+curl --request POST \
+--data '{"name": "riamf"}' \
+--header "Content-Type: application/json" \
+http://localhost:8080/welcome
+```
+
+It should work just fine.
+
+There are other HTTP methods that are supported by Vapor, but their implementation is very similar to what we saw today. I think you can see that this is very easy to create advance routing in your own Vapor app.
+
 # Leaf
 
 So what is [Leaf](https://github.com/vapor/leaf)? It is a Vapor way of creating front-end applications, a very powerful templating language. So it is not like whole Angular or Rails that provides a lot of functionality out of the box but it has I would say a similar templating functionalities for creating web page templates. 
