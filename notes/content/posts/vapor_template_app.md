@@ -297,7 +297,7 @@ Now the only thing to do is prepare html templates. There is one default directo
 
 ![vapor resources views](/images/vapor_resources_views.png)
 
-Now you are ready to create first templates. In `Xcode` just select `New File` and ftom Other types select Empty and call it `index.leaf`. This way Leaf will know that it should render this file with injected context. Now I will show you an example content for this kind of file:
+Now you are ready to create first templates. In `Xcode` just select `New File` and from Other types select Empty and call it `index.leaf`. This way Leaf will know that it should render this file with injected context. Now I will show you an example content for this kind of file:
 
 {{< highlight html "linenos=inline,linenostart=0" >}}
 <!DOCTYPE html>
@@ -339,6 +339,167 @@ You can also see that I declared simple `struct` called `IndexContext`(line 0) t
 This is just a dummy example of how values can be passed into Leaf templates but I think you can already see the possibilities and power of Leaf. You can pass there information extracted from database, whole models and by creating templates, tell them how to render the View without duplicating code. Whole logic can be done in Context that is a Model for Leaf that is just a dummy view Layer when you think of it in standard web MVC context.
 
 # Fluent
+
+Now it is finally time to introduce you to Vapor persistance layer called [Fluent](https://github.com/vapor/fluent). It is Swift ORM framework for integration with SQL and NoSQL databases. According to [documentation](http://beta.docs.vapor.codes/fluent/database/) databases that are officially supported are MySQL, SQLite and Memory, there is also unofficial support for PostgreSQL and MongoDB, I personally tested PostgreSQL and it worked just fine for me, here I want to focus on one of the supported ones like mysql.
+
+## MySQL Local Setup
+
+To setup MySQL database locally I recommend using [docker](https://docs.docker.com/docker-for-mac/install/) this will assure you that we have same environment. First you need MySQL docker image so if you already have docker [installed](https://docs.docker.com/docker-for-mac/install/) ust run this in Terminal:
+```
+docker pull mysql:5.7.23
+```
+
+This will download container, now to run it with proper parameters try:
+```
+docker run -p 3306:3306 -e MYSQL_DATABASE=db_name -e MYSQL_ROOT_PASSWORD=root mysql:5.7.23
+```
+So, what is going on here, we are running the container on `localhost`, port number `3306`, we are also passing `root` password and a default database name to be created.
+
+Done, now you have running MySQL database with `root` user and default database schema `db_name`.
+
+## Adding Fluent dependency
+
+Ok, so to actually use Fluent in project we need to add it as a project dependency in SPM. Open `Package.swift` and in `dependencies` array add new entry:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+.package(url: "https://github.com/vapor/fluent-mysql.git", from: "3.0.0-rc")
+/* ... */
+.target(name: "App", dependencies: ["FluentMySQL",
+                                            "Vapor"]
+{{< / highlight >}}
+
+Now to update the project with new dependency run
+```
+vapor update
+```
+from terminal, this will download dependency and if you are using Xcode it will also regenerate and reopen project.
+
+Now to create connection between Vapor app and our new database we need to add some configuration in `configure(...)` function from `configure.swift` file:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+try services.register(FluentMySQLProvider())
+
+let hostname = Environment.get("MYSQL_HOST") ?? "localhost"
+let portString = Environment.get("MYSQL_PORT") ?? "3306"
+let username = Environment.get("MYSQL_USERNAME") ?? "root"
+let password = Environment.get("MYSQL_PASSWORD") ?? "root"
+let schema = Environment.get("MYSQL_DATABASE") ?? "db_name"
+let mysqlConfig = MySQLDatabaseConfig(hostname: hostname,
+                                        port: Int(portString)!,
+                                        username: username,
+                                        password: password,
+                                        database: schema)
+
+
+let mysql = MySQLDatabase(config: mysqlConfig)
+var databases = DatabasesConfig()
+databases.add(database: mysql, as: .mysql)
+services.register(databases)
+
+var migrations = MigrationConfig()
+services.register(migrations)
+{{< / highlight >}}
+
+This is a lot of code, but it is really simple. Here I choose to create a configuration with environment variables. First thing to do in line 0 is to register MySQL Fluent Provider, now from 2-6 we are reading environment variables and defaulting to local setup, in line 7 we create configuration with this variables and now we can create database connection and register it in services (lines 14-17), last thing to do is add some code to handle migrations...when we will have some models to migrate this part will be more important.
+
+And done, now if you run the project you should see in a console log something like
+```
+...Migrating 'mysql' database...
+```
+This means that everything is working correctly 👍
+
+## Creating Fluent Model
+
+It is time to create our first ORM model. Make a new file called `User.swift` with this content:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+import Vapor
+import FluentMySQL
+
+final class User {
+    var id: UUID?
+    var username: String
+    var password: String
+}
+
+extension User: MySQLUUIDModel {}
+extension User: Migration {}
+{{< / highlight >}}
+
+If you look at the top structure declaration, you will see that this is just a normal value type we all know, but what makes it really ready for Fluent is in the extensions section. Here you can see the conformance to `MySQLUUIDModel` and `Migration`. Important to address here is the fact that conforming to `MySQLUUIDModel` forces us to have a property:
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+var id: UUID? { get set }
+{{< / highlight >}}
+
+And you probably guessed it, this is a database id that will be used by MySQL 👏. There is also a possibility to just conform to `Model` protocol that will force us to provide information what is considered an id field for this entity using Key Value Codding, but `MySQLUUIDModel` does it for us in default protocol extension. Conformance to `Migration` protocol gives us ability to perform migration that will create table for this model, there are also two by default empty functions regarding migrations that we can implement:
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+static func prepare(on conn: MySQLConnection) -> Future<Void>
+static func revert(on conn: Database.Connection) -> Future<Void>
+{{< / highlight >}}
+
+`prepare` is used usually for creating table, updating columns etc, and `revert` is usually for dropping table.
+So what we need to do to make migration? Remember the migration part from `configure.swift` we need to add this migration there:
+{{< highlight swift "linenos=inline,hl_lines=2,linenostart=0" >}}
+var migrations = MigrationConfig()
+migrations.add(model: User.self, database: .mysql)
+services.register(migrations)
+{{< / highlight >}}
+Line 1 is the new one here, we are registering this migration and server when starting will perform this migration and store information inside `fluent` table, it will look something like this:
+```
+|id|name|batch|createdAt|updatedAt|
+| e?hs?M?G??V ?|User|1|2018-10-30 09:22:12.672274|2018-10-30 09:22:12.672274|
+```
+And done, now you have a functioning Model that can be used in application. As you already know by adding Conformance to other protocols like `Content` you can actually use this model as a body of your POST request to create new `User` in database.
+
+## Future...
+
+Now it is time to present you the only thing that I think is not so easy to comprehend. Unless you already meet with them, cause this is indeed the same [Future](https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/Future.html) as you can meet in Java or [asyncio python](https://docs.python.org/3/library/asyncio-task.html). But if you still don't have any clue what is it I will explain it now. We already mentioned that Vapor 3.0 works on top of Swift-NIO that is basically an low level event framework, thanks to that we can perform many concurrent no blocking operations, and to represent that kind of operation in Vapor we can use `Future`. I think that the best way to learn something is to write some sample code and see how ti works. So let's do that. 
+
+### Creating User
+
+We already have this `User` so let us work with that, first add conformance to `Content` and `Parameter` protocols to be able to use User as a body and parameter for request:
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+// User.swift
+extension User: Content {}
+extension User: Parameter {}
+{{< / highlight >}}
+
+Next let's add route to create new user:
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+// routes.swift
+router.post(User.self, at: "user") { (request, user) -> Future<User> in
+    return user.save(on: request)
+}
+{{< / highlight >}}
+
+You probably already noticed that we are now using `Future` here, but why? Saving data to database is a blocking operation, it might take less then a second or it might take more then a minute it depends on many conditions so here it is actually send to be done as a background task called `Future` and we declare that as a result of this saved user we will Return new User object. Let's try this out:
+```
+curl --request POST --data '{"uuid": "d1a76cc2-e1ef-11e8-9f32-f2801f1b9fd1", "password": "secret"}' \
+--header "Content-Type: application/json" \
+http://localhost:8080/user
+```
+and in result I see:
+```
+{
+    "id":"FAF916C2-E8ED-4E16-966E-A277902B0CBB","uuid":"d1a76cc2-e1ef-11e8-9f32-f2801f1b9fd1",
+    "password":"secret"
+}
+```
+
+This is super nice! Fluent makes working with Futures much easier cause it delegates most of the work by default to be done in the background and the result will come in `Future` and will be returned to you to do something with it.
+
+### Extracting User
+
+Let's try something else, like using our model as a route parameter since we already added conformance to the `Parameter` protocol we can do this:
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+// routes.swift
+router.get("users", User.parameter) { req -> Future<User> in
+    return try req.parameters.next(User.self)
+}
+{{< / highlight >}}
+
+Ok but exactly is going on? Request object that is available in every implementation of route closure has a connection to database, it can also look for parameters in the request. Here we are telling to our router that after `/user/` we are expecting a `User.parameter`, but `User` is an object and we cannot use it as a single path parameter...right, we can't but we can use its id 😱. Look at the result JSON that was returned from endpoint for creating new users, there is a id `FAF916C2-E8ED-4E16-966E-A277902B0CBB`, it is auto-generated so your might be different no worries, now with this implementation we can use this id as a route parameter like this [http://localhost:8080/users/FAF916C2-E8ED-4E16-966E-A277902B0CBB/](http://localhost:8080/users/FAF916C2-E8ED-4E16-966E-A277902B0CBB/) and it should return again `User` object from our database in JSON form and we managed to do all this without actually doing a lot of writing, most of this stuff is available out of the box with Vapor and Fluent...it is pretty sweet 😍.
+
 # Authentication
 # Template App
 ## Creating App
