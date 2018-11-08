@@ -501,6 +501,107 @@ router.get("users", User.parameter) { req -> Future<User> in
 Ok but exactly is going on? Request object that is available in every implementation of route closure has a connection to database, it can also look for parameters in the request. Here we are telling to our router that after `/user/` we are expecting a `User.parameter`, but `User` is an object and we cannot use it as a single path parameter...right, we can't but we can use its id 😱. Look at the result JSON that was returned from endpoint for creating new users, there is a id `FAF916C2-E8ED-4E16-966E-A277902B0CBB`, it is auto-generated so your might be different no worries, now with this implementation we can use this id as a route parameter like this [http://localhost:8080/users/FAF916C2-E8ED-4E16-966E-A277902B0CBB/](http://localhost:8080/users/FAF916C2-E8ED-4E16-966E-A277902B0CBB/) and it should return again `User` object from our database in JSON form and we managed to do all this without actually doing a lot of writing, most of this stuff is available out of the box with Vapor and Fluent...it is pretty sweet 😍.
 
 # Authentication
+
+Ok so we now know how to create routes, pass data to our service, store this data however we would like to, and return data, we also looked at Leaf that can help us present this data in form of HTML page. Last thing that I find necessary to have is some kind of authentication method. You probably already guessed, there is a swift package for Vapor that do just that nad it is called [Auth](https://github.com/vapor/auth). 
+
+Again first we need to add it to our SPM:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+dependencies: [
+        ...
+        .package(url: "https://github.com/vapor/auth.git", from: "2.0.1")
+    ],
+    targets: [
+        .target(name: "App", dependencies: ["Authentication", ...]),
+        .target(name: "Run", dependencies: ["App"]),
+        .testTarget(name: "AppTests", dependencies: ["App"])
+    ]
+{{< / highlight >}}
+
+To use `Authentication` framework we need to register it in configuration function from `configure.swif` file, like this:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+import Authentication
+...
+public func configure(_ config: inout Config,
+                      _ env: inout Environment, _ services: inout Services) throws {
+try services.register(AuthenticationProvider())
+...
+{{< / highlight >}}
+
+Now everything is ready to make what exactly? Vapor `Authentication` frameworks provides two types of authorization:
+1. Basic authorization
+2. Bearer authorization
+3. Web authentication with Session
+4. OAuth 2.0 supported by [Imperial](https://github.com/vapor-community/Imperial)
+
+There is a lot, and It would require a lot of time to cover everything so I will only cover in detail Basic Authorization and I will try briefly write something about others.
+
+## Basic Authorization
+
+Basic authentication is the simplest technique of access control, it requires user to constantly send HTTP header field that contains username and password, it is also the weakest for cause it provides no security for transported credentials, just a [Base64](https://en.wikipedia.org/wiki/Base64) encoding. But it is the easiest to implement, hopefully you will be convinced about that.
+
+So, we already have database connected to our service and we have this `User` model, so now let's add this:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+import Authentication
+...
+extension User: BasicAuthenticatable {
+    static var usernameKey: UsernameKey {
+        return \User.uuid
+    }
+
+    static var passwordKey: PasswordKey {
+        return \User.password
+    }
+}
+{{< / highlight >}}
+
+We are adding conformance to `BasicAuthenticatable` protocol, to do this we need to tell the protocol which properties will be treated as `username` and `password`. Now to make sure we will NEVER EVER save our password as a plain text add this:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+import Crypto
+...
+init(id: UUID? = nil, uuid: String, password: String) throws {
+    self.id = id
+    self.uuid = uuid
+    self.password = try BCrypt.hash(password)
+}
+{{< / highlight >}}
+
+Here we added `Crypto` framework that ia available because it is a dependency on `Authentication` framework, so we now can use it inside `User` `init` to make sure that every created User will have hashed password. Ok, so now we have a model conforms to basic authentication. What else we need to do is decide on what routes are behind auth and what are not. So where we should do this, of course in
+`routes.swift`, but to keep things organized let us create new `RouteCollection` called `BasicAuthRouter` where we will add new route that will extract users, whole thing should look like that:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+import Authentication
+import Vapor
+
+class BasicAuthRouter: RouteCollection {
+
+    func boot(router: Router) throws {
+        let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
+        let guardAuthMiddleware = User.guardAuthMiddleware()
+        let protected = router.grouped(basicAuthMiddleware,
+                                       guardAuthMiddleware)
+
+        protected.get("users") { (request) -> Future<[User]> in
+            return User.query(on: request).all().map({ (users) in
+                return users
+            })
+        }
+    }
+}
+{{< / highlight >}}
+
+And done! If you now go under [http://localhost:8080/users](http://localhost:8080/users) you will see something like this:
+
+![no_auth_user](/images/no_auth_user.png)
+
+Hm...did I just blocked myself forever from accessing my own app? Cause I don't have any user in database...ok I can create POST endpoint that will create user for me, and we actually already did that, but that endpoint should also be moved here under protected routes, we would not want to have it exposed to the world! So what can we do now 🤔 well we can migrate new user 😱.
+
+
+
+
 # Template App
 ## Creating App
 ## Adding dependencies
