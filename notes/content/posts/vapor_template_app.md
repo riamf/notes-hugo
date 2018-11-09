@@ -597,7 +597,13 @@ And done! If you now go under [http://localhost:8080/users](http://localhost:808
 
 ![no_auth_user](/images/no_auth_user.png)
 
-Hm...did I just blocked myself forever from accessing my own app? Cause I don't have any user in database...ok I can create POST endpoint that will create user for me, and we actually already did that, but that endpoint should also be moved here under protected routes, we would not want to have it exposed to the world! So what can we do now 🤔 well we can migrate new user 😱.
+Hm...did I just blocked myself forever from accessing my own app? Cause I don't have any user in database...ok I can create POST endpoint that will create user for me, and we actually already did that, but that endpoint should also be moved here under protected routes, we would not want to have it exposed to the world! So what can we do now...🤔...well we can migrate new user 😱.
+
+So far we did nothing regarding migration except adding new `User` Model that creates User table in MySQL database. Now we will learn how to use migration mechanic to create admin user, let's create new file `AdminUser.swift`:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+
+{{< / highlight >}}
 
 
 
