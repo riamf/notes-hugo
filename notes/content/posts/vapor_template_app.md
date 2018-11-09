@@ -602,10 +602,38 @@ Hm...did I just blocked myself forever from accessing my own app? Cause I don't 
 So far we did nothing regarding migration except adding new `User` Model that creates User table in MySQL database. Now we will learn how to use migration mechanic to create admin user, let's create new file `AdminUser.swift`:
 
 {{< highlight swift "linenos=inline,linenostart=0" >}}
+import Vapor
+import FluentMySQL
 
+struct AdminUser: Migration {
+
+    typealias Database = MySQLDatabase
+
+    static func prepare(on conn: MySQLConnection) -> EventLoopFuture<Void> {
+        guard let password = Environment.get("MULTIPASS"),
+            let user = try? User(uuid: UUID().uuidString,
+                                 password:  password) else {
+            fatalError("UNABLE TO ADD ADMIN USER 😱")
+        }
+
+        return user.save(on: conn).transform(to: ())
+    }
+
+    static func revert(on conn: MySQLConnection) -> EventLoopFuture<Void> {
+        return .done(on: conn)
+    }
+}
 {{< / highlight >}}
 
+So what is going on here. Everything is happening in `prepare` function like in normal migration, here we are creating `User` model and saving it, so after our server will start, this user will already be inserted into database. Password for this user is taken from environment variable, remember that you can pass environment variables like this:
 
+![xvode_env](/images/xcode_env.png)
+
+Now when running the server, it will perform new migration:
+```
+Preparing migration 'AdminUser'...
+```
+Now if you 
 
 
 # Template App
