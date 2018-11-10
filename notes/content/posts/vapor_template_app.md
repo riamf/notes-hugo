@@ -417,21 +417,21 @@ import Vapor
 import FluentMySQL
 
 final class User {
-    var id: UUID?
-    var username: String
+    var id: Int?
     var password: String
+    var uuid: String
 }
 
-extension User: MySQLUUIDModel {}
+extension User: MySQLModel {}
 extension User: Migration {}
 {{< / highlight >}}
 
-If you look at the top structure declaration, you will see that this is just a normal value type we all know, but what makes it really ready for Fluent is in the extensions section. Here you can see the conformance to `MySQLUUIDModel` and `Migration`. Important to address here is the fact that conforming to `MySQLUUIDModel` forces us to have a property:
+If you look at the top structure declaration, you will see that this is just a normal value type we all know, but what makes it really ready for Fluent is in the extensions section. Here you can see the conformance to `MySQLModel` and `Migration`. Important to address here is the fact that conforming to `MySQLModel` forces us to have a property:
 {{< highlight swift "linenos=inline,linenostart=0" >}}
-var id: UUID? { get set }
+var id: ID? { get set }
 {{< / highlight >}}
 
-And you probably guessed it, this is a database id that will be used by MySQL 👏. There is also a possibility to just conform to `Model` protocol that will force us to provide information what is considered an id field for this entity using Key Value Codding, but `MySQLUUIDModel` does it for us in default protocol extension. Conformance to `Migration` protocol gives us ability to perform migration that will create table for this model, there are also two by default empty functions regarding migrations that we can implement:
+And you probably guessed it, this is a database id that will be used by MySQL 👏. There is also a possibility to just conform to `Model` protocol that will force us to provide information what is considered an `id` field for this entity using Key Value Codding, but `MySQLModel` does it for us in default protocol extension. Conformance to `Migration` protocol gives us ability to perform migration that will create table for this model, there are also two by default empty functions regarding migrations that we can implement:
 {{< highlight swift "linenos=inline,linenostart=0" >}}
 static func prepare(on conn: MySQLConnection) -> Future<Void>
 static func revert(on conn: Database.Connection) -> Future<Void>
@@ -481,7 +481,7 @@ http://localhost:8080/user
 and in result I see:
 ```
 {
-    "id":"FAF916C2-E8ED-4E16-966E-A277902B0CBB","uuid":"d1a76cc2-e1ef-11e8-9f32-f2801f1b9fd1",
+    "id":"1","uuid":"d1a76cc2-e1ef-11e8-9f32-f2801f1b9fd1",
     "password":"secret"
 }
 ```
@@ -557,12 +557,12 @@ extension User: BasicAuthenticatable {
 }
 {{< / highlight >}}
 
-We are adding conformance to `BasicAuthenticatable` protocol, to do this we need to tell the protocol which properties will be treated as `username` and `password`. Now to make sure we will NEVER EVER save our password as a plain text add this:
+We are adding conformance to `BasicAuthenticatable` protocol, to do this we need to tell the protocol which properties will be treated as `username` and `password` and we are doing this above. Now to make sure we will NEVER EVER save our password as a plain text, add this:
 
 {{< highlight swift "linenos=inline,linenostart=0" >}}
 import Crypto
 ...
-init(id: UUID? = nil, uuid: String, password: String) throws {
+init(id: Int? = nil, uuid: String, password: String) throws {
     self.id = id
     self.uuid = uuid
     self.password = try BCrypt.hash(password)
@@ -599,7 +599,7 @@ And done! If you now go under [http://localhost:8080/users](http://localhost:808
 
 Hm...did I just blocked myself forever from accessing my own app? Cause I don't have any user in database...ok I can create POST endpoint that will create user for me, and we actually already did that, but that endpoint should also be moved here under protected routes, we would not want to have it exposed to the world! So what can we do now...🤔...well we can migrate new user 😱.
 
-So far we did nothing regarding migration except adding new `User` Model that creates User table in MySQL database. Now we will learn how to use migration mechanic to create admin user, let's create new file `AdminUser.swift`:
+So far we did nothing regarding migration except adding new `User` Model that creates table in MySQL database. Now we will learn how to use migration mechanic to create admin user, let's create new file `AdminUser.swift`:
 
 {{< highlight swift "linenos=inline,linenostart=0" >}}
 import Vapor
@@ -627,7 +627,7 @@ struct AdminUser: Migration {
 
 So what is going on here. Everything is happening in `prepare` function like in normal migration, here we are creating `User` model and saving it, so after our server will start, this user will already be inserted into database. Password and UUID for this user is taken from environment variable, remember that you can pass environment variables like this:
 
-![xvode_env](/images/xcode_env_vars.png)
+![xcode_env_vars](/images/xcode_env_vars.png)
 
 Now if you want to actually perform the migration you need to add it in `configure.swift` like that:
 
@@ -643,7 +643,7 @@ If you will run the server, it will perform new migration:
 Preparing migration 'AdminUser'...
 ```
 
-To check if this works, we can try to curl our secured endpoint, but to do that we need to prepare basic auth header, I like using Swift REPL, we know that our admin username is actually and uuid: `2B423396-F4BA-45B5-BBDA-20EE296BF970` and password: `password`. Basic auth requires base64 encoded values `username:password` so let's do something like that:
+To check if this works, we can try to curl our secured endpoint, but to do that we need to prepare basic auth header. We know that our admin username is actually and uuid: `2B423396-F4BA-45B5-BBDA-20EE296BF970` and password: `password`. Basic auth requires base64 encoded values `username:password` so let's do something like that using Swift REPL:
 ```
   1> import Foundation 
   2. let str = "2B423396-F4BA-45B5-BBDA-20EE296BF970:password" 
@@ -653,9 +653,8 @@ str: String = "2B423396-F4BA-45B5-BBDA-20EE296BF970:password"
 data: Data = 45 bytes
 header: String = "authorization:Basic Optional(\"MkI0MjMzOTYtRjRCQS00NUI1LUJCREEtMjBFRTI5NkJGOTcwOnBhc3N3b3Jk\")"
 ```
-You can copy and paste this into Swift REPL and it will return your version of Basic auth header.
+You can copy and paste this into console and it will return your version of Basic auth header if you used same username and password to create `AdminUser` you can copy the result from here.
 Now copy content of `header` variable, it will be a base64 encoded username and password that needs to go with the curl request that should look like that:
-
 ```
 curl \
 --header "authorization:Basic MkI0MjMzOTYtRjRCQS00NUI1LUJCREEtMjBFRTI5NkJGOTcwOnBhc3N3b3Jk" \
@@ -663,8 +662,7 @@ curl \
 http://localhost:8080/users
 ```
 
-And now you should see that you have full access to [http://localhost:8080/users](http://localhost:8080/users):
-
+And now you should see that you have full access to secured endpoint and the result should look like this:
 {{< highlight json "linenos=inline,linenostart=0" >}}
 [
   {
@@ -675,7 +673,7 @@ And now you should see that you have full access to [http://localhost:8080/users
 ]
 {{< / highlight >}}
 
-Ok, what is wrong here? We are listing full whole data for our `User` even password, ok it is hashed but still we should not do that and there is an easy way to cover that. We will create an internal User model called `PublicUser`
+Ok, what is wrong here? We are listing whole data for our `User`, even password, ok it is hashed but still we should not do that and there is an easy way to hide that. We will create an internal User model called `PublicUser`
 {{< highlight json "linenos=inline,linenostart=0" >}}
 struct Public: Codable, Content {
     let id: String
@@ -683,7 +681,13 @@ struct Public: Codable, Content {
 }
 {{< / highlight >}}
 As you can see there is no password field here, so it will never be displayed 👏.
-So the only thing is to perform the transformation from `User` to `PublicUser` inside `users` route:
+So the only thing is to perform the transformation from `User` to `PublicUser` we will do this inside helper method in `User` model:
+{{< highlight json "linenos=inline,linenostart=0" >}}
+func publicUser() -> Public {
+    return Public(id: "\(id!)", uuid: uuid)
+}
+{{< / highlight >}}
+Now we can use this helper method inside router function:
 {{< highlight swift "linenos=inline,linenostart=0" >}}
 protected.get("users") { (request) -> Future<[User.Public]> in
     return User.query(on: request).all().map({ (users) in
