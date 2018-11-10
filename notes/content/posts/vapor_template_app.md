@@ -611,11 +611,11 @@ struct AdminUser: Migration {
 
     static func prepare(on conn: MySQLConnection) -> EventLoopFuture<Void> {
         guard let password = Environment.get("MULTIPASS"),
-            let user = try? User(uuid: UUID().uuidString,
+            let uuid = Environment.get("MULTIPASS_UUID"),
+            let user = try? User(uuid: uuid,
                                  password:  password) else {
             fatalError("UNABLE TO ADD ADMIN USER 😱")
         }
-
         return user.save(on: conn).transform(to: ())
     }
 
@@ -625,27 +625,82 @@ struct AdminUser: Migration {
 }
 {{< / highlight >}}
 
-So what is going on here. Everything is happening in `prepare` function like in normal migration, here we are creating `User` model and saving it, so after our server will start, this user will already be inserted into database. Password for this user is taken from environment variable, remember that you can pass environment variables like this:
+So what is going on here. Everything is happening in `prepare` function like in normal migration, here we are creating `User` model and saving it, so after our server will start, this user will already be inserted into database. Password and UUID for this user is taken from environment variable, remember that you can pass environment variables like this:
 
-![xvode_env](/images/xcode_env.png)
+![xvode_env](/images/xcode_env_vars.png)
 
-Now when running the server, it will perform new migration:
+Now if you want to actually perform the migration you need to add it in `configure.swift` like that:
+
+{{< highlight swift "linenos=inline,hl_lines=3,linenostart=0" >}}
+var migrations = MigrationConfig()
+migrations.add(model: User.self, database: .mysql)
+migrations.add(migration: AdminUser.self, database: .mysql)
+services.register(migrations)
+{{< / highlight >}}
+
+If you will run the server, it will perform new migration:
 ```
 Preparing migration 'AdminUser'...
 ```
-Now if you 
+
+To check if this works, we can try to curl our secured endpoint, but to do that we need to prepare basic auth header, I like using Swift REPL, we know that our admin username is actually and uuid: `2B423396-F4BA-45B5-BBDA-20EE296BF970` and password: `password`. Basic auth requires base64 encoded values `username:password` so let's do something like that:
+```
+  1> import Foundation 
+  2. let str = "2B423396-F4BA-45B5-BBDA-20EE296BF970:password" 
+  3. let data = str.data(using: .utf8)! 
+  4. let header = "authorization:Basic \(String(data: data.base64EncodedData(), encoding: .utf8)!)"
+str: String = "2B423396-F4BA-45B5-BBDA-20EE296BF970:password"
+data: Data = 45 bytes
+header: String = "authorization:Basic Optional(\"MkI0MjMzOTYtRjRCQS00NUI1LUJCREEtMjBFRTI5NkJGOTcwOnBhc3N3b3Jk\")"
+```
+You can copy and paste this into Swift REPL and it will return your version of Basic auth header.
+Now copy content of `header` variable, it will be a base64 encoded username and password that needs to go with the curl request that should look like that:
+
+```
+curl \
+--header "authorization:Basic MkI0MjMzOTYtRjRCQS00NUI1LUJCREEtMjBFRTI5NkJGOTcwOnBhc3N3b3Jk" \
+--header "content-type: application/json" \
+http://localhost:8080/users
+```
+
+And now you should see that you have full access to [http://localhost:8080/users](http://localhost:8080/users):
+
+{{< highlight json "linenos=inline,linenostart=0" >}}
+[
+  {
+    "id": 1,
+    "uuid": "2B423396-F4BA-45B5-BBDA-20EE296BF970",
+    "password": "$2b$12$GEX5aviSdY3RWN3HRkzE6uvTobeCwpuh/KV2K4AL1s17QS6Vy7CJa"
+  }
+]
+{{< / highlight >}}
+
+Ok, what is wrong here? We are listing full whole data for our `User` even password, ok it is hashed but still we should not do that and there is an easy way to cover that. We will create an internal User model called `PublicUser`
+{{< highlight json "linenos=inline,linenostart=0" >}}
+struct Public: Codable, Content {
+    let id: String
+    let uuid: String
+}
+{{< / highlight >}}
+As you can see there is no password field here, so it will never be displayed 👏.
+So the only thing is to perform the transformation from `User` to `PublicUser` inside `users` route:
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+protected.get("users") { (request) -> Future<[User.Public]> in
+    return User.query(on: request).all().map({ (users) in
+        return users.map({$0.publicUser()})
+    })
+}
+{{< / highlight >}}
+If you now try previous curl, you should see something like this:
+{{< highlight json "linenos=inline,linenostart=0" >}}
+[
+  {
+    "id": "1",
+    "uuid": "2B423396-F4BA-45B5-BBDA-20EE296BF970"
+  }
+]
+{{< / highlight >}}
+
+No password is visible now, remember to hide all of the vulnerable data that you keep in the your database.
 
 
-# Template App
-## Creating App
-## Adding dependencies
-## Vapor update
-## Example route
-## User model
-## Basic Auth
-## Adding hidden route
-### Covering user data
-## Seeding database
-## Deployment
-## Summary
-## External sources
