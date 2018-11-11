@@ -782,6 +782,83 @@ The only thing that is missing is building a login page for User to enter userna
 
 This method is more a open standard for authenticating than a method of authentication. Generally you are authenticating in 3rd party like Google that assures about your credibility to access data on server for example. So when you click `Login with Google` you are authenticated in Google that gives this application a token that can be used to validate your access to other server resources. Implementing this kind of mechanism in Vapor can be done by using [Imperial](https://github.com/vapor-community/Imperial) it handles Github and Google as a OAuth providers for now. If you would like to implement this I recommend reading the source guide available [here](https://github.com/vapor-community/Imperial/blob/master/docs/Google/README.md).
 
+# Testing
+
+What is really important ine every project is to have a good test coverage. And you can do this in Vapor to. Let's now add some test to the routes we created.
+
+I recommend creating a helper extension for `Application` to save a lot of code duplication in tests:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+extension Application {
+
+    static func startTestApp() -> Application {
+        do {
+            var app: Application!
+            var env = try Environment.detect()
+            var services = Services.default()
+            var config = Config.default()
+
+            env.commandInput.arguments = []
+
+            try App.configure(&config, &env, &services)
+
+            app = try Application(
+                config: config,
+                environment: env,
+                services: services
+            )
+
+            try App.boot(app)
+            try app.asyncRun().wait()
+            return app
+        } catch {
+            fatalError("Unable to start App in tests")
+        }
+    }
+
+    static func stopTestApp(_ app: Application) {
+        try? app.runningServer?.close().wait()
+    }
+}
+{{< / highlight >}}
+
+`startTestApp` is a method called in every test `setUp` function from `XCTestCase` and `stopTestApp` will be called on `tearDown` function. This function is actually running our server with test environment and test configuration that you can change as you like, I used default configuration here.
+I also like creating something like `BaseTestCase` class that will provide all necessary properties to use in test
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+class BaseTestCase: XCTestCase {
+    var app: Application!
+    var connection: MySQLConnection!
+
+    override func setUp() {
+        app = Application.startTestApp()
+        connection = try! app.newConnection(to: .mysql).wait()
+    }
+
+    override func tearDown() {
+        Application.stopTestApp(app)
+    }
+}
+{{< / highlight >}}
+
+Now I can use this class as a base to every test case I would like to write. It will call `setUp` and `tearDown` functions for me and it will provide `app` property to use in tests. So let's write a simple test case that will call our server main route, that is a `http://localhost:8080` and will check if server responded with `ok` status:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+final class SampleRouteTests: BaseTestCase {
+
+    func testSampelRoute() throws {
+        let response = try? app.client().get("http://localhost:8080").wait()
+        XCTAssert(response?.http.status == .ok)
+    }
+
+    static let allTests = [
+        ("testSampelRoute", testSampelRoute)
+    ]
+}
+{{< / highlight >}}
+
+now if you run this in Xcode by running ⌘+u or by running `vapor test` in console you should see that test passes. Writing tests in Vapor project is very easy cause you have whole environment already setup and all you have to do is check all the logic behind your routes.
+
 # Deployment
 
 I think you are ready to deploy your first app, you know everything to build a great web app, but where to deploy it 🤔. There are a lot of options. You can use well known [Heroku](https://www.heroku.com/) as it is supported or if you would like you can use [docker image for vapor](https://hub.docker.com/r/vapor/vapor/) and deploy it in basically anywhere with access to bare metal like [DigitalOcean](https://www.digitalocean.com/).
@@ -806,6 +883,12 @@ Remember that the best way to learn is to try doing things yourself. I also lear
 2. Next one is a (Server Side Swift with Vapor)[https://store.raywenderlich.com/products/server-side-swift-with-vapor] one of the great [Ray Wenderlich](https://store.raywenderlich.com/) editions  written by members of Vapor Team.
 
 Have fun reading my sources or trying some of this stuff by yourself, honestly making things with vapor is really nice and intuitive especially for someone like me who already has some Swift experience. Back in the days when I was learning iOS it was only Objective-C and to actually deliver some end-to-end solutions I had to learn other language web frameworks like Ruby on Rails or Python Django today we have Swift and it can run on server so I find it really nice that you can write mobile and backend in same language and maybe share some between apps it is really nice to have.
+
+If you would like to check how some of the stuff we did here are working you can take a look [here](https://github.com/riamf/vapor_app_base). What is also really great about Vapor is that you can actually use this repository like this:
+```
+vapor new myProject --template=riamf/vapor_app_base
+```
+It will create your new project from my template where you already will have a Basic Auth with `User` model persistance layer implemented in MySQL so feel free to use it or extend it for you convenience.
 
 
 
