@@ -481,7 +481,8 @@ http://localhost:8080/user
 and in result I see:
 ```
 {
-    "id":"1","uuid":"d1a76cc2-e1ef-11e8-9f32-f2801f1b9fd1",
+    "id":"1",
+    "uuid":"d1a76cc2-e1ef-11e8-9f32-f2801f1b9fd1",
     "password":"secret"
 }
 ```
@@ -502,7 +503,7 @@ Ok but exactly is going on? Request object that is available in every implementa
 
 # Authentication
 
-Ok so we now know how to create routes, pass data to our service, store this data however we would like to, and return data, we also looked at Leaf that can help us present this data in form of HTML page. Last thing that I find necessary to have is some kind of authentication method. You probably already guessed, there is a swift package for Vapor that do just that nad it is called [Auth](https://github.com/vapor/auth). 
+Ok so we now know how to create routes, pass data to our service, store this data however we would like to, and return data, we also looked at Leaf that can help us present this data in form of HTML page. Last thing that I find necessary to have is some kind of authentication method. You probably already guessed, there is a swift package for Vapor that do just that nad it is called [Auth](https://github.com/vapor/auth).
 
 Again first we need to add it to our SPM:
 
@@ -530,12 +531,13 @@ try services.register(AuthenticationProvider())
 {{< / highlight >}}
 
 Now everything is ready to make what exactly? Vapor `Authentication` frameworks provides two types of authorization:
+
 1. Basic authorization
 2. Bearer authorization
 3. Web authentication with Session
 4. OAuth 2.0 supported by [Imperial](https://github.com/vapor-community/Imperial)
 
-There is a lot, and It would require a lot of time to cover everything so I will only cover in detail Basic Authorization and I will try briefly write something about others.
+There is a lot, and It would require a lot of time to cover everything so I will only cover in detail Basic Authorization and I will try briefly write about others.
 
 ## Basic Authorization
 
@@ -705,6 +707,106 @@ If you now try previous curl, you should see something like this:
 ]
 {{< / highlight >}}
 
-No password is visible now, remember to hide all of the vulnerable data that you keep in the your database.
+No password is visible now, remember to hide all of the vulnerable data that you keep in your database.
+
+## Bearer authorization
+
+This type of authorization is based on tokens that are saved in database. When user tries to log in password and username are passed and server after authenticating the user will generate a token for user and will return this token back to the client. Then if user wants to call any secured endpoint, there is no need to pass username and password again, just the token is needed. This way we do not have to pass usern=5ame and password in headers that is not secured at all. Token generated on server usually is valid only for some time like an hour or even less. After that, new request for the token needs to be performed to authenticate user and return new token.
+
+Now how to implement this in Vapor. First we need to create `Token` class. 
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+final class Token: Codable, MySQLModel, Content {
+    var id: Int?
+    var token: String
+    var userID: User.ID
+
+    init(token: String, userID: User.ID) {
+        self.token = token
+        self.userID = userID
+    }
+}
+extension Token: Migration {
+    static func prepare(on connection: MySQLConnection) -> Future<Void> {
+        return Database.create(self, on: connection, closure: { (builder) in
+            try addProperties(to: builder)
+            builder.reference(from: \Token.userID, to: \User.id)
+        })
+    }
+}
+{{< / highlight >}}
+
+As you can see in the `Migration` extension we are adding a reference to another entity, this way our User entity will be connected to Token and we will always be able to determine a valid token for user. Of course we need to add this migration in `configure.swift` file. We also could create a simple generate token function that will automatically create new token for user when logging in.
+
+Ok but to actually make token auth mechanism, we also need to make `Token` model conform to `Token` protocol and `User` model conform to `TokenAuthenticatable` like this:
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+extension User: TokenAuthenticatable {
+    typealias TokenType = Token
+}
+extension Token: Authentication.Token {
+    static var userIDKey: UserIDKey = \Token.userID
+
+    typealias UserType = User
+
+    typealias UserIDType = User.ID
+
+    static var tokenKey: TokenKey = \Token.token
+}
+{{< / highlight >}}
+
+Now `Authentication` framework will know how to connect `User` and `Token` models.
+There is also some work that needs to be done in `router.swift` or in new class that will be a `RouteCollection` for your secured data.
+
+I highly recommend to try this out. Of course this is not all, cause we should also provide some mechanism for `Token` expiration and renewal but that itself is a subject for a whole new post.
+
+## Web Session
+
+So now you should be aware of two different types for authentication. These methods were only for protecting your API and it is not possible to use them in web browser for example as there is no possibility to add custom headers to browser request. But to be able to handle browser auth you need to use `Sessions`. This is a smart mechanism to persist user access information across many requests. In Vapor they are handled with a middleware, so first you need to add this in `configure.swift`:
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+middlewares.use(SessionsMiddleware.self)
+...
+config.prefer(MemoryKeyedCache.self, for: KeyedCache.self)
+{{< / highlight >}}
+
+First line configures server session middleware and last one defines Memory Cache that will work as a Key-Value cache for sessions. Next we need to add conformance to `PasswordAuthenticatable` and `SessionAuthenticatable` for `User` model, first will allow Vapor to authenticate user with username and password. Next protocol is for allowing Vapor to store and retrieve necessary user session information in Key-Value cache.
+
+Whole this should allow you to build routes that are hidden behind Session auth
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
+let authSessionRoutes = router.grouped(User.authSessionsMiddleware())
+{{< / highlight >}}
+
+The only thing that is missing is building a login page for User to enter username and password but I leave this for you to figure out 😉
+
+## OAuth
+
+This method is more a open standard for authenticating than a method of authentication. Generally you are authenticating in 3rd party like Google that assures about your credibility to access data on server for example. So when you click `Login with Google` you are authenticated in Google that gives this application a token that can be used to validate your access to other server resources. Implementing this kind of mechanism in Vapor can be done by using [Imperial](https://github.com/vapor-community/Imperial) it handles Github and Google as a OAuth providers for now. If you would like to implement this I recommend reading the source guide available [here](https://github.com/vapor-community/Imperial/blob/master/docs/Google/README.md).
+
+# Deployment
+
+I think you are ready to deploy your first app, you know everything to build a great web app, but where to deploy it 🤔. There are a lot of options. You can use well known [Heroku](https://www.heroku.com/) as it is supported or if you would like you can use [docker image for vapor](https://hub.docker.com/r/vapor/vapor/) and deploy it in basically anywhere with access to bare metal like [DigitalOcean](https://www.digitalocean.com/).
+
+There is also a new way to setup your first vapor app online. I think this one is the easiest and is very well integrated with Vapor CLI. It is called [Vapor Cloud](https://vapor.cloud/). So to use this you just need to create account by going here [https://dashboard.vapor.cloud/](https://dashboard.vapor.cloud/), next by using vapor toolbox type in the console"
+```
+vapor cloud login
+```
+Next if you are already in you vapor app directory just type in
+```
+vapor cloud deploy
+```
+First run of this command will ask you a lot of questions about environments and databases to use company names etc. For first time I recommend using default settings for everything. After you will see how everything works you will have a plenty of time play around with settings. After you deployed your first app it will also appear in online [dashboard](https://dashboard.vapor.cloud/). Don't worry about payments for now, Vapor cloud provides a lot for their Free Account Users so feel free to play around with it and then decide if you want to use it.
+
+# Summary
+
+Wow 😲 I think we covered a lot in here! But still it is not all that you can do with Vapor, we did not even touched WebSockets that are actually a feature that you can use or advance caching where you can integrate with Redis or even auth methods, we have barely scratched the surface there. But I think it is a good place to start. I hope you now have a overview of what is Vapor how it works, how easy it is to create some basic functionality in it and if you come from Apple swift/Objective-C world then I think you will feel like you are in home with Vapor.
+Remember that the best way to learn is to try doing things yourself. I also learned a lot after reading two great books that I would like to recommend here.
+
+1. First is a [Server-Side Swift: Vapor Edition](https://itunes.apple.com/pl/book/server-side-swift-vapor-edition/id1389763820?mt=11) from [Paul Hudson](https://twitter.com/twostraws) 
+
+2. Next one is a (Server Side Swift with Vapor)[https://store.raywenderlich.com/products/server-side-swift-with-vapor] one of the great [Ray Wenderlich](https://store.raywenderlich.com/) editions  written by members of Vapor Team.
+
+Have fun reading my sources or trying some of this stuff by yourself, honestly making things with vapor is really nice and intuitive especially for someone like me who already has some Swift experience. Back in the days when I was learning iOS it was only Objective-C and to actually deliver some end-to-end solutions I had to learn other language web frameworks like Ruby on Rails or Python Django today we have Swift and it can run on server so I find it really nice that you can write mobile and backend in same language and maybe share some between apps it is really nice to have.
+
+
 
 
