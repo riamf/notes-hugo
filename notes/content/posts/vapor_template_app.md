@@ -20,13 +20,13 @@ So what was so important about this release was that whole framework got rebuild
 
 Where to start...well I can say short that it is a low level network communication framework for creating high level frameworks or applications, And that would be it. But let me explain some it step by step.
 
-One of the most important things, [Swift-NIO](https://github.com/apple/swift-nio) is made and maintained by Apple. You can go on their github and check it out, it is really neat. I guess there is something in what Chris Lattner said about `Swift`, that the goal is a total world domination, it is on iOS, macOS, tvOS Linux and we can now build tensors with [Swift for tensorflow](https://github.com/tensorflow/swift), it is really cool, cause Swift is one of my favorite programming languages. 
+One of the most important things, [Swift-NIO](https://github.com/apple/swift-nio) is made and maintained by Apple. You can go on their github and check it out, it is really neat. I guess there is something in what Chris Lattner said about `Swift`, that the goal is a total world domination, it is on iOS, macOS, tvOS, Linux and we can now build tensors with [Swift for tensorflow](https://github.com/tensorflow/swift), it is really cool, cause Swift is one of my favorite programming languages. 
 
-It was created at Apple by people from iCloud team. You can check this [talk](https://www.youtube.com/watch?v=QJ3WG9kRLMo) from Norman Maurer one of the creators, it is a great talk. Under the hood Swift-NIO is an low level asynchronous, event driven network framework with non-blocking IO operations, it is based on [netty](https://netty.io/) but it is written in Swift 😍. If you are already familiar with `netty` you know that it is very good and there is no need for reinventing the wheel so guys from Apple decided to make it work, and they did, cheers for them 👏. Main thing to point here is that you will not use `Swift-NIO` at all, the only thing you need to know is that it is there somewhere under the hood making things easier for you. `Vapor 3` is already using it and provides high level API for users to easily interact with network events. It might look like I am underestimating the value of `Swift-NIO` here, but I want to write more about cool stuff from Vapor world and there is a loot!
+Swift NIO was created at Apple by people from iCloud team. You can check this great [talk](https://www.youtube.com/watch?v=QJ3WG9kRLMo) from Norman Maurer one of the creators. Under the hood Swift-NIO is an low level asynchronous, event driven network framework with non-blocking IO operations, it is based on [netty](https://netty.io/) but it is written in Swift 😍. If you are already familiar with `netty` you know that it is very good and there is no need for reinventing the wheel so guys from Apple decided to make it work, and they did, cheers for them 👏. Main thing to point here is that you will not use `Swift-NIO` at all, the only thing you need to know is that it is there somewhere under the hood making things easier for you. `Vapor 3` is already using it and provides high level API for developers to easily interact with network events. It might look like I am underestimating the value of `Swift-NIO` here, but I want to write more about cool stuff from Vapor world and there is a loot!
 
 # Swift Package Manager
 
-SPM was released with Swift 3.0 and is supported with this and all above Swift versions. If you come from iOS world then you will recognize it as similar to [Cocoapods](https://cocoapods.org/) or [Carthage](https://github.com/Carthage/Carthage), because is actually is doing exactly the same stuff. It is a simple dependency management tool that helps you keep track of, compile and link all external libraries that you use. What is really nice about SPM is that it works on Linux 💯. It is vastly used among desktop macOS apps or Linux apps written in Swift. But beside helping you to manage dependencies you can actually use it to create one, like a library you would like to publish for open source community or one that you are using internally in your company and would like to keep it maintained. If you want to know more about it I recommend checking one of the great tutorials from Ray Wenderlich sites written by Mikael Konutgan [An Introduction to the Swift Package Manager](https://www.raywenderlich.com/750-an-introduction-to-the-swift-package-manager) or going directly to SPM [documentation](https://swift.org/package-manager/). Here the only thing you have to know is that if you would like to use some external library in vapor app, you can use SPM for to do it and I will present it many times in next chapters.
+SPM was released with Swift 3.0 and is supported with this and all above Swift versions. If you come from iOS world then you will recognize it as similar to [Cocoapods](https://cocoapods.org/) or [Carthage](https://github.com/Carthage/Carthage), because is actually is doing exactly the same stuff. It is a simple dependency management tool that helps you keep track of, compile and link all external libraries that you use. What is really nice about SPM is that it works on Linux 💯. It is vastly used among desktop macOS apps or Linux apps written in Swift. But beside helping you to manage dependencies you can actually use it to create one, like a library you would like to publish for open source community or one that you are using internally in your company and would like to keep it maintained. If you want to know more about it I recommend checking one of the great tutorials from Ray Wenderlich sites written by Mikael Konutgan [An Introduction to the Swift Package Manager](https://www.raywenderlich.com/750-an-introduction-to-the-swift-package-manager) or going directly to SPM [documentation](https://swift.org/package-manager/). Here the only thing you have to know is that if you would like to use some external library in Vapor app, you will have to use SPM to do it and I will present how many times in next chapters.
 
 # Vapor CLI
 
@@ -49,7 +49,7 @@ it should tell you something like this:
 
 ![vapor check](/images/vapor_check.png)
 
-As you can see I have a warning, this is because I recently updated macOS to Mojave and Xcode to version 10 that also updated my CLI tools and Swift to 4.2. These versions are not yet fully supported by Vapor team but I did not noticed any issues while playing around with Vapor and hopefully you won't see any.
+As you can see I have a warning, this is because I recently updated macOS to Mojave and Xcode to version 10 that also updated my development tools and Swift to 4.2. These versions are not yet fully supported by Vapor team but I did not noticed any issues while playing around with Vapor and hopefully you won't see any.
 
 Ok, now that we have all things ready, go into your working directory and create sample app by typing in Terminal:
 ```
@@ -81,7 +81,7 @@ Vapor has a full support for running in Xcode, to make it happen though you need
 ```
 vapor xcode -y
 ```
-This command will generate and open Xcode project for you. Having Xcode support is great cause it gives you breakpoints and all LLDB commands just like in iOS/macOS apps 😍. From Xcode you can build and run Vapor app same as you would do with iOS or macOS app by using ⌘+r to build&run or ⌘+b to build ⌘+c to clean etc it all works the same. Sample vapor app comes with Two default schemas, one is for tests and one for building and running the app, be sure you have selected correct `Run` scheme:
+This command will generate and open Xcode project for you. Having Xcode support is great cause it gives you breakpoints and all LLDB commands just like in iOS/macOS apps 😍. From Xcode you can build and run Vapor app same as you would do with iOS or macOS app by using ⌘+r to build&run or ⌘+b to build ⌘+c to clean etc it all works the same. Sample vapor app comes with two default schemas, one is for tests and one for building and running the app, be sure you have selected correct `Run` scheme:
 
 ![vapor scheme](/images/vapor_scheme.png)
 
@@ -103,7 +103,7 @@ public func routes(_ router: Router) throws
 It provides a `router` object that has ability to extend available routes handled by this sample app. 
 ## Config
 
-If you would like to change Vapor configuration, port number or add separation between environments, change cipher configuration and more, it is possible by creating directory called `Config` in root project folder. There you can put for example server.json file with some new configuration like this:
+If you would like to change Vapor configuration, port number or add separation between environments, change cipher configuration and more, it is possible by creating directory called `Config` in root project folder. There you can put for example `server.json` file with some new configuration like this:
 {{< highlight json "linenos=inline,linenostart=0" >}}
 {
     "port": "$PORT:8080",
@@ -119,7 +119,7 @@ vapor run --hostname 192.168.31.215 --port 6969
 ```
 
 ## Adding new route
-So if I would like to create a new route like this: `http://localhost:8080/welcome`, that will return welcome message, what I need to do is add it to the router like this inside this `routes` function:
+So if I would like to create a new route like this: `http://localhost:8080/welcome`, that will return welcome message, what I need to do is add it to the router like this inside `routes` function:
 
 {{< highlight swift "linenos=inline,linenostart=0" >}}
 router.get("welcome") { _ -> String in
@@ -180,7 +180,7 @@ Now you can check that going under [http://localhost:8080/welcome](http://localh
 
 ## Route Parameters
 
-As you have already noticed probably we declared routes that are using [HTTP Get](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods) method most of the time. Se let us personalize our welcome message by reading query parameters. It is pretty simple task as every `Request` object has `QueryContainer` structure that represents query, it also implements multiple variations of subscripts so to read for example query value with key `name` wee need to implement something like this:
+As you have already noticed probably we declared routes that are using [HTTP GET](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods). So let us personalize our welcome message by reading query parameters. It is pretty simple task as every `Request` object has `QueryContainer` structure that represents query, it also implements multiple variations of subscripts so to read for example query value with key `name` we need to implement something like this:
 
 {{< highlight swift "linenos=inline,linenostart=0" >}}
 func welcome(_ request: Request) -> String {
@@ -191,7 +191,7 @@ func welcome(_ request: Request) -> String {
 
 And that is it, now calling [http://localhost:8080/welcome?name=riamf](http://localhost:8080/welcome?name=riamf) will add personalized welcome message.
 
-Since most stuff in Vapor works with Codable we can also do magic like this:
+Since most stuff in Vapor works with `Codable` we can also do magic like this:
 
 {{< highlight swift "linenos=inline,linenostart=0" >}}
 struct Person: Codable {
@@ -216,7 +216,7 @@ func welcome(_ request: Request) throws -> String {
 }
 {{< / highlight >}}
 
-Next we need to tell our router that we want to handle route `localhost:8080/welcome/(some String value)`, to do this we can add new route to our collection but and our already modified handler will do the trick of extracting route parameter:
+Next we need to tell our router that we want to handle route `localhost:8080/welcome/(some String value)`, to do this we can add new route to our collection and our already modified handler will do the trick of extracting route parameter:
 
 {{< highlight swift "linenos=inline,linenostart=0" >}}
 router.get("welcome", String.parameter, use: controller.welcome)
@@ -240,7 +240,7 @@ Adding conformance to `Content` type does everything we need. Now lets write new
 router.post(Person.self, at: "welcome", use: controller.postWelcome)
 {{< / highlight >}}
 
-AS you can see here we are telling our router to look for Content of type `Person.self` in body of POST request to `welcome` endpoint and use `postWelcome` function as a handler
+As you can see here we are telling our router to look for Content of type `Person.self` in body of POST request to `welcome` endpoint and use `postWelcome` function as a handler
 
 {{< highlight swift "linenos=inline,linenostart=0" >}}
 func postWelcome(_ request: Request, _ person: Person) -> String {
@@ -256,13 +256,13 @@ curl --request POST \
 http://localhost:8080/welcome
 ```
 
-It should work just fine.
+And it works just fine.
 
-There are other HTTP methods that are supported by Vapor, but their implementation is very similar to what we saw today. I think you can see that this is very easy to create advance routing in your own Vapor app.
+There are other HTTP methods that are supported by Vapor, but their implementation is very similar to what we saw already. I think you can see that this is very easy to create advance routing in your own Vapor app.
 
 # Leaf
 
-So what is [Leaf](https://github.com/vapor/leaf)? It is a Vapor way of creating front-end applications, a very powerful templating language. So it is not like whole Angular or Rails that provides a lot of functionality out of the box but it has I would say a similar templating functionalities for creating web page templates. 
+So what is [Leaf](https://github.com/vapor/leaf)? It is a Vapor way of creating front-end applications, a very powerful templating language. It is not like whole Angular or Rails that provides a lot of functionality out of the box but it has I would say a similar templating functionalities for creating web page templates. 
 
 How to use it in Vapor project is very simple. With Swift Package Manager, cause this is a main dependency management system that is used in Vapor, most of this stuff is simple, you just need to add a Leaf package to the app like this:
 
@@ -283,7 +283,7 @@ let package = Package(
 
 This will add Leaf package to your application, from this point you can use it to build sites.
 
-Next thing that needs to be done in the app is render configuration, we need to tell the app that we now have leaf and we would prefer it to use new Renderer. To do this just we just need import Leaf framework in `configure.swift` file and add that line at the end of `configure` function:
+Next thing that needs to be done in the app is render configuration, we need to tell the app that we now have Leaf and we would prefer to use new Renderer. To do this we just need import Leaf framework in `configure.swift` file and add that line at the end of `configure` function:
 
 {{< highlight swift "linenos=inline,linenostart=0" >}}
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
@@ -318,7 +318,7 @@ Now you are ready to create first templates. In `Xcode` just select `New File` a
 
 This file will be rendered as our index file. You can clearly see that it is just a simple html with some additional leaf tags. Here I used `#if` tag to check if variable `name` was passed into this template, if it was then I am using it to print welcome with `name` and if not then just a simple welcome.
 
-I thing it is clear how this part works, there is a lot tags you can use in templates I recommend looking into (leaf documentation)[https://docs.vapor.codes/3.0/leaf/overview/].
+I think it is clear how this part works, there is a lot tags you can use in templates I recommend looking into (leaf documentation)[https://docs.vapor.codes/3.0/leaf/overview/].
 What you might wonder now it how this context is passed into the page. This is done by some magic in router. Let me show you example index route and then I will explain it all step by step:
 
 {{< highlight swift "linenos=inline,linenostart=0" >}}
@@ -329,22 +329,22 @@ struct IndexContext: Codable {
 public func routes(_ router: Router) throws {
 
     router.get("") { (request) -> Future<View> in
-        return try request.view().render("index", IndexContext(name: "You"))
+        return try request.view().render("index", IndexContext(name: "Vapor"))
     }
 }
 {{< / highlight >}}
 
-Sample vapor app has this file called `routes.swift` that you already know about, There you can declare routes handled by the app. I decided that going under empty route(line 6) so basically going to our server address `http://localhost:8080` I want it to render my index template and that what is going on in line 7.
+Sample Vapor app has this file called `routes.swift` that you already know about, There you can declare routes handled by the app. I decided that going under empty route(line 6) so basically going to our server address `http://localhost:8080` I want it to render my index template and that what is going on in line 7.
 You can also see that I declared simple `struct` called `IndexContext`(line 0) that contain value `name` of type `String`. This is a page context that I am also passing to Leaf in line 7. If you look at leaf template above you can see that when I'm checking `name` variable it is actually a variable from this `IndexContext`, this structure values are passed down to the template and you don't have to do anything like `context.name` it is already there.
-This is just a dummy example of how values can be passed into Leaf templates but I think you can already see the possibilities and power of Leaf. You can pass there information extracted from database, whole models and by creating templates, tell them how to render the View without duplicating code. Whole logic can be done in Context that is a Model for Leaf that is just a dummy view Layer when you think of it in standard web MVC context.
+This is just a dummy example of how values can be passed into Leaf templates but I think you can already see the possibilities and power of Leaf. You can pass there information extracted from database, whole models and by creating templates, tell them how to render the View without duplicating code. Whole logic can be done in Context, a Model for Leaf template, a dummy view Layer when you think of it in standard web MVC context.
 
 # Fluent
 
-Now it is finally time to introduce you to Vapor persistance layer called [Fluent](https://github.com/vapor/fluent). It is Swift ORM framework for integration with SQL and NoSQL databases. According to [documentation](http://beta.docs.vapor.codes/fluent/database/) databases that are officially supported are MySQL, SQLite and Memory, there is also unofficial support for PostgreSQL and MongoDB, I personally tested PostgreSQL and it worked just fine for me, here I want to focus on one of the supported ones like mysql.
+Now it is finally time to introduce you to Vapor persistance layer called [Fluent](https://github.com/vapor/fluent). It is Swift ORM framework for integration with SQL and NoSQL databases. According to [documentation](http://beta.docs.vapor.codes/fluent/database/) databases that are officially supported are MySQL, SQLite and Memory, there is also unofficial support for PostgreSQL and MongoDB, I personally tested PostgreSQL and it worked just fine for me, here I want to focus on one of the supported ones like MySQL.
 
 ## MySQL Local Setup
 
-To setup MySQL database locally I recommend using [docker](https://docs.docker.com/docker-for-mac/install/) this will assure you that we have same environment. First you need MySQL docker image so if you already have docker [installed](https://docs.docker.com/docker-for-mac/install/) ust run this in Terminal:
+To setup MySQL database locally I recommend using [docker](https://docs.docker.com/docker-for-mac/install/) this will assure you that we have same environment. First you need MySQL docker image so if you already have docker [installed](https://docs.docker.com/docker-for-mac/install/) just run this in Terminal:
 ```
 docker pull mysql:5.7.23
 ```
@@ -444,7 +444,7 @@ var migrations = MigrationConfig()
 migrations.add(model: User.self, database: .mysql)
 services.register(migrations)
 {{< / highlight >}}
-Line 1 is the new one here, we are registering this migration and server when starting will perform this migration and store information inside `fluent` table, it will look something like this:
+Line 1 is the new one here, we are registering this migration and server when starting will perform this and store information inside `fluent` table, it will look something like this:
 ```
 |id|name|batch|createdAt|updatedAt|
 | e?hs?M?G??V ?|User|1|2018-10-30 09:22:12.672274|2018-10-30 09:22:12.672274|
@@ -453,7 +453,7 @@ And done, now you have a functioning Model that can be used in application. As y
 
 ## Future...
 
-Now it is time to present you the only thing that I think is not so easy to comprehend. Unless you already meet with them, cause this is indeed the same [Future](https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/Future.html) as you can meet in Java or [asyncio python](https://docs.python.org/3/library/asyncio-task.html). But if you still don't have any clue what is it I will explain it now. We already mentioned that Vapor 3.0 works on top of Swift-NIO that is basically an low level event framework, thanks to that we can perform many concurrent no blocking operations, and to represent that kind of operation in Vapor we can use `Future`. I think that the best way to learn something is to write some sample code and see how ti works. So let's do that. 
+Now it is time to present you the only thing that I think is not so easy to comprehend at first. Unless you already meet with them, cause this is indeed the same [Future](https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/Future.html) as you can meet in Java or [asyncio python](https://docs.python.org/3/library/asyncio-task.html). But if you still don't have any clue what is it I will explain it now. We already mentioned that Vapor 3.0 works on top of Swift-NIO that is basically an low level event framework, thanks to that we can perform many concurrent no blocking operations, and to represent that kind of operation in Vapor we can use `Future`. I think that the best way to learn something is to write some sample code and see how it works. So let's do that. 
 
 ### Creating User
 
@@ -499,11 +499,11 @@ router.get("users", User.parameter) { req -> Future<User> in
 }
 {{< / highlight >}}
 
-Ok but exactly is going on? Request object that is available in every implementation of route closure has a connection to database, it can also look for parameters in the request. Here we are telling to our router that after `/user/` we are expecting a `User.parameter`, but `User` is an object and we cannot use it as a single path parameter...right, we can't but we can use its id 😱. Look at the result JSON that was returned from endpoint for creating new users, there is a id `FAF916C2-E8ED-4E16-966E-A277902B0CBB`, it is auto-generated so your might be different no worries, now with this implementation we can use this id as a route parameter like this [http://localhost:8080/users/FAF916C2-E8ED-4E16-966E-A277902B0CBB/](http://localhost:8080/users/FAF916C2-E8ED-4E16-966E-A277902B0CBB/) and it should return again `User` object from our database in JSON form and we managed to do all this without actually doing a lot of writing, most of this stuff is available out of the box with Vapor and Fluent...it is pretty sweet 😍.
+Ok but exactly is going on? Request object that is available in every implementation of route closure has a connection to database, it can also look for parameters in the request. Here we are telling to our router that after `/user/` we are expecting a `User.parameter`, but `User` is an object and we cannot use it as a single path parameter...right, we can't but we can use its id 😱. Look at the result JSON that was returned from endpoint for creating new users, there is a id `1`, now with this implementation we can use this id as a route parameter like this [http://localhost:8080/users/1/](http://localhost:8080/users/1/) and it should return again `User` object from our database in JSON form and we managed to do all this without actually doing a lot of writing, most of this stuff is available out of the box with Vapor and Fluent...it is pretty sweet 😍.
 
 # Authentication
 
-Ok so we now know how to create routes, pass data to our service, store this data however we would like to, and return data, we also looked at Leaf that can help us present this data in form of HTML page. Last thing that I find necessary to have is some kind of authentication method. You probably already guessed, there is a swift package for Vapor that do just that nad it is called [Auth](https://github.com/vapor/auth).
+Ok so we now know how to create routes, pass data to our service, store this data however we would like to, and return data, we also looked at Leaf that can help us present this data in form of HTML pages. Last thing that I find necessary to have is some kind of authentication method. You probably already guessed, there is a swift package for Vapor that do just that and it is called [Auth](https://github.com/vapor/auth).
 
 Again first we need to add it to our SPM:
 
@@ -530,7 +530,7 @@ try services.register(AuthenticationProvider())
 ...
 {{< / highlight >}}
 
-Now everything is ready to make what exactly? Vapor `Authentication` frameworks provides two types of authorization:
+Now everything is ready to make what exactly? Vapor `Authentication` frameworks provides these types of authorization:
 
 1. Basic authorization
 2. Bearer authorization
@@ -541,7 +541,7 @@ There is a lot, and It would require a lot of time to cover everything so I will
 
 ## Basic Authorization
 
-Basic authentication is the simplest technique of access control, it requires user to constantly send HTTP header field that contains username and password, it is also the weakest for cause it provides no security for transported credentials, just a [Base64](https://en.wikipedia.org/wiki/Base64) encoding. But it is the easiest to implement, hopefully you will be convinced about that.
+Basic authentication is the simplest technique of access control, it requires user to constantly send HTTP header field that contains username and password, it is also the weakest cause it provides no security for transported credentials, just a [Base64](https://en.wikipedia.org/wiki/Base64) encoding.
 
 So, we already have database connected to our service and we have this `User` model, so now let's add this:
 
@@ -601,7 +601,7 @@ And done! If you now go under [http://localhost:8080/users](http://localhost:808
 
 Hm...did I just blocked myself forever from accessing my own app? Cause I don't have any user in database...ok I can create POST endpoint that will create user for me, and we actually already did that, but that endpoint should also be moved here under protected routes, we would not want to have it exposed to the world! So what can we do now...🤔...well we can migrate new user 😱.
 
-So far we did nothing regarding migration except adding new `User` Model that creates table in MySQL database. Now we will learn how to use migration mechanic to create admin user, let's create new file `AdminUser.swift`:
+So far we did nothing regarding migration except adding new `User` model that creates table in MySQL database. Now we will learn how to use migration mechanic to create admin user, let's create new file `AdminUser.swift`:
 
 {{< highlight swift "linenos=inline,linenostart=0" >}}
 import Vapor
@@ -659,7 +659,7 @@ You can copy and paste this into console and it will return your version of Basi
 Now copy content of `header` variable, it will be a base64 encoded username and password that needs to go with the curl request that should look like that:
 ```
 curl \
---header "authorization:Basic MkI0MjMzOTYtRjRCQS00NUI1LUJCREEtMjBFRTI5NkJGOTcwOnBhc3N3b3Jk" \
+--header "Authorization:Basic MkI0MjMzOTYtRjRCQS00NUI1LUJCREEtMjBFRTI5NkJGOTcwOnBhc3N3b3Jk" \
 --header "content-type: application/json" \
 http://localhost:8080/users
 ```
@@ -676,15 +676,17 @@ And now you should see that you have full access to secured endpoint and the res
 {{< / highlight >}}
 
 Ok, what is wrong here? We are listing whole data for our `User`, even password, ok it is hashed but still we should not do that and there is an easy way to hide that. We will create an internal User model called `PublicUser`
-{{< highlight json "linenos=inline,linenostart=0" >}}
+
+{{< highlight swift "linenos=inline,linenostart=0" >}}
 struct Public: Codable, Content {
     let id: String
     let uuid: String
 }
 {{< / highlight >}}
+
 As you can see there is no password field here, so it will never be displayed 👏.
 So the only thing is to perform the transformation from `User` to `PublicUser` we will do this inside helper method in `User` model:
-{{< highlight json "linenos=inline,linenostart=0" >}}
+{{< highlight swift "linenos=inline,linenostart=0" >}}
 func publicUser() -> Public {
     return Public(id: "\(id!)", uuid: uuid)
 }
@@ -711,7 +713,7 @@ No password is visible now, remember to hide all of the vulnerable data that you
 
 ## Bearer authorization
 
-This type of authorization is based on tokens that are saved in database. When user tries to log in password and username are passed and server after authenticating the user will generate a token for user and will return this token back to the client. Then if user wants to call any secured endpoint, there is no need to pass username and password again, just the token is needed. This way we do not have to pass usern=5ame and password in headers that is not secured at all. Token generated on server usually is valid only for some time like an hour or even less. After that, new request for the token needs to be performed to authenticate user and return new token.
+This type of authorization is based on tokens that are saved in database. When user tries to log in password and username are passed and server after authenticating the user, server will generate a token and will return this token back to the client. Then if user wants to call any secured endpoint, there is no need to pass username and password again, just the token is needed. This way we do not have to pass username and password in headers that is not secured at all. Token generated on server usually is valid only for some time like an hour or even less. After that, new request for the token needs to be performed to authenticate user and return new token or refresh old one.
 
 Now how to implement this in Vapor. First we need to create `Token` class. 
 {{< highlight swift "linenos=inline,linenostart=0" >}}
@@ -871,20 +873,20 @@ Next if you are already in you vapor app directory just type in
 ```
 vapor cloud deploy
 ```
-First run of this command will ask you a lot of questions about environments and databases to use company names etc. For first time I recommend using default settings for everything. After you will see how everything works you will have a plenty of time play around with settings. After you deployed your first app it will also appear in online [dashboard](https://dashboard.vapor.cloud/). Don't worry about payments for now, Vapor cloud provides a lot for their Free Account Users so feel free to play around with it and then decide if you want to use it.
+First run of this command will ask you a lot of questions about environments and databases to use company names etc. For first time I recommend using default settings for everything. After you will see how everything works you will have a plenty of time to play around with settings. After you deployed your first app it will also appear in online [dashboard](https://dashboard.vapor.cloud/). Don't worry about payments for now, Vapor cloud provides a lot for their Free Account Users so feel free to play around with it and then decide if you want to use it.
 
 # Summary
 
-Wow 😲 I think we covered a lot in here! But still it is not all that you can do with Vapor, we did not even touched WebSockets that are actually a feature that you can use or advance caching where you can integrate with Redis or even auth methods, we have barely scratched the surface there. But I think it is a good place to start. I hope you now have a overview of what is Vapor how it works, how easy it is to create some basic functionality in it and if you come from Apple swift/Objective-C world then I think you will feel like you are in home with Vapor.
+Wow 😲 I think we covered a lot in here! But still it is not all that you can do with Vapor, we did not even touched WebSockets that are actually a feature that you can use or advance caching where you can integrate with Redis or even auth methods, we have barely scratched the surface there. But I think it is a good place to start. I hope you now have a overview of what is Vapor how it works, how easy it is to create some basic functionality in it and if you come from Swift world then I think you will feel like you are in home with Vapor.
 Remember that the best way to learn is to try doing things yourself. I also learned a lot after reading two great books that I would like to recommend here.
 
 1. First is a [Server-Side Swift: Vapor Edition](https://itunes.apple.com/pl/book/server-side-swift-vapor-edition/id1389763820?mt=11) from [Paul Hudson](https://twitter.com/twostraws) 
 
-2. Next one is a (Server Side Swift with Vapor)[https://store.raywenderlich.com/products/server-side-swift-with-vapor] one of the great [Ray Wenderlich](https://store.raywenderlich.com/) editions  written by members of Vapor Team.
+2. Next one is a [Server Side Swift with Vapor](https://store.raywenderlich.com/products/server-side-swift-with-vapor) one of the great [Ray Wenderlich](https://store.raywenderlich.com/) editions  written by members of Vapor Team.
 
-Have fun reading my sources or trying some of this stuff by yourself, honestly making things with vapor is really nice and intuitive especially for someone like me who already has some Swift experience. Back in the days when I was learning iOS it was only Objective-C and to actually deliver some end-to-end solutions I had to learn other language web frameworks like Ruby on Rails or Python Django today we have Swift and it can run on server so I find it really nice that you can write mobile and backend in same language and maybe share some between apps it is really nice to have.
+Have fun reading my sources or trying some of this stuff by yourself, honestly making things with Vapor is really nice and intuitive especially for someone like me who already has some Swift experience. Back in the days when I was learning iOS it was only Objective-C and to actually deliver some end-to-end solutions I had to learn other language web frameworks like Ruby on Rails or Python Django today we have Swift and it can run on server so I find it really nice that you can write mobile and backend in same language and maybe share some code between apps it is really nice.
 
-If you would like to check how some of the stuff we did here are working you can take a look [here](https://github.com/riamf/vapor_app_base). What is also really great about Vapor is that you can actually use this repository like this:
+If you would like to check how some of the stuff we did here are working you can take a look [here](https://github.com/riamf/vapor_app_base). What is also really great about Vapor is that you can actually use this repository as a vapor template like this:
 ```
 vapor new myProject --template=riamf/vapor_app_base
 ```
