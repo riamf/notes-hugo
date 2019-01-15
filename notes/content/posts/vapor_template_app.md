@@ -1,8 +1,8 @@
 +++
 title = "Vapor template app"
 date = 2018-10-25T20:53:37+02:00
-tags = ["Swift", "Vapor", "MySQL"]
-categories = [""]
+tags = ["Swift", "Vapor", "MySQL", "Docker"]
+categories = ["Swift", "backend"]
 draft = false
 +++
 
